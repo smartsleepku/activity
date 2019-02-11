@@ -1,0 +1,52 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
+    }
+}
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.3.11'
+    id 'java'
+    id 'application'
+}
+
+if (getGradle().getStartParameter().getTaskRequests().toString().contains('shadowJar')) {
+    apply plugin: 'com.github.johnrengelman.shadow'
+}
+
+group 'dk.ku.sund'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.slf4j:slf4j-simple:1.7.25'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.1.1'
+    implementation 'org.litote.kmongo:kmongo:3.9.2'
+    implementation 'org.litote.kmongo:kmongo-coroutine:3.9.2'
+    implementation 'io.javalin:javalin:2.6.0'
+    implementation 'com.cars:docker-secrets:0.2.0'
+    implementation 'com.google.code.gson:gson:2.8.5'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = '1.8'
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = '1.8'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'MainKt'
+    }
+}
+
+mainClassName = 'MainKt'
