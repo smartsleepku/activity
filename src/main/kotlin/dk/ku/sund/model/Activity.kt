@@ -12,4 +12,6 @@ class Activity(id: String?, userId: String?) {
     val type: String? = null
     val confidence: Int? = null
     val time: Date? = null
+
+    fun isResting(): Boolean = type == "stationary"
 }

@@ -3,17 +3,22 @@ package dk.ku.sund.handler
 import com.google.gson.GsonBuilder
 import dk.ku.sund.database.db
 import dk.ku.sund.model.Activity
+import dk.ku.sund.model.Rest
 import dk.ku.sund.model.Token
 import io.javalin.Context
 import io.javalin.apibuilder.CrudHandler
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.future.asCompletableFuture
+import org.litote.kmongo.descending
 import org.litote.kmongo.eq
+import java.util.*
+import java.util.Calendar.MINUTE
 
 class ActivityHandler: CrudHandler {
 
-    val collection = db.getCollection<Activity>("activities")
+    val activityCollection = db.getCollection<Activity>("activities")
+    val restCollection = db.getCollection<Rest>("rests")
 
     val gson = GsonBuilder()
         .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
@@ -30,7 +35,7 @@ class ActivityHandler: CrudHandler {
 
     suspend fun owned(context: Context, activityId: String): Activity? = run {
         val token = token(context)
-        val found = collection.findOne(Activity::id eq activityId, Activity::userId eq token?.userId)
+        val found = activityCollection.findOne(Activity::id eq activityId, Activity::userId eq token?.userId)
         if (found == null) setDenied(context)
         found
     }
@@ -39,11 +44,60 @@ class ActivityHandler: CrudHandler {
         val token = token(ctx) ?: return
 
         val deferred = GlobalScope.async {
-            val activities = collection.find(Activity::userId eq token.userId)
+            val activities = activityCollection.find(Activity::userId eq token.userId)
             val list = activities.toList()
             gson.toJson(list)
         }
         ctx.result(deferred.asCompletableFuture())
+    }
+
+    suspend fun updateRest(userId: String, activity: Activity): Any = run {
+        // Find the latest periods of rest/unrest for this user
+        val results = restCollection
+            .find(Rest::userId eq userId)
+            .sort(descending(Rest::endTime))
+            .limit(2)
+            .toList()
+
+        var rest: Rest? = results.firstOrNull()
+
+        if (results.count() == 2 && activity.isResting() == false) {
+            // Swallow resting periods up inside active periods
+            val calendar = Calendar.getInstance()
+            calendar.time = activity.time
+            calendar.add(MINUTE, -5)
+            val boundary = calendar.time
+            if (results.first().resting == true &&
+                results.last().resting == false &&
+                results.last().endTime!! > boundary) {
+                restCollection.deleteOne(Rest::id eq results.first().id)
+                rest = results.last()
+            }
+        }
+
+        if (rest != null && rest.endTime!! >= activity.time && rest.resting == activity.isResting()) {
+            // If this can be appended to an existing period of rest/unrest
+            val calendar = Calendar.getInstance()
+            calendar.time = activity.time
+            calendar.add(MINUTE, 5)
+            rest.endTime = calendar.time
+            restCollection.updateOne(Rest::id eq rest.id, rest)
+        } else {
+            if (rest != null) {
+                // If a previous rest/unrest period exists, then update its end time
+                rest.endTime = activity.time
+                restCollection.updateOne(Rest::id eq rest.id, rest)
+            }
+            // Start a new period of rest/unrest
+            rest = Rest(null, userId)
+            rest.resting = activity.isResting()
+            rest.startTime = activity.time
+            val calendar = Calendar.getInstance()
+            calendar.time = activity.time
+            calendar.add(MINUTE, 5)
+            rest.endTime = calendar.time
+            restCollection.insertOne(rest)
+        }
     }
 
     override fun create(ctx: Context) {
@@ -53,7 +107,10 @@ class ActivityHandler: CrudHandler {
             val activity = ctx.body<Activity>()
             activity.userId = token.userId
             activity.id = null
-            collection.insertOne(activity)
+
+            updateRest(token.userId, activity)
+
+            activityCollection.insertOne(activity)
         }
         ctx.result(deferred.asCompletableFuture())
     }
@@ -61,7 +118,7 @@ class ActivityHandler: CrudHandler {
     override fun delete(ctx: Context, resourceId: String) {
         val deferred = GlobalScope.async {
             val activity = owned(ctx, resourceId)
-            if (activity != null) collection.deleteOne(Activity::id eq resourceId)
+            if (activity != null) activityCollection.deleteOne(Activity::id eq resourceId)
             ""
         }
         ctx.result(deferred.asCompletableFuture())
@@ -82,7 +139,7 @@ class ActivityHandler: CrudHandler {
                 val activity = ctx.body<Activity>()
                 activity.id = resourceId
                 activity.userId = token.userId
-                collection.updateOne(activity.id!!, activity)
+                activityCollection.updateOne(activity.id!!, activity)
                 gson.toJson(activity)
             } else {
                 ""
