@@ -13,8 +13,11 @@ import kotlinx.coroutines.future.asCompletableFuture
 import kotlinx.coroutines.runBlocking
 import org.litote.kmongo.descending
 import org.litote.kmongo.eq
+import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.Calendar.MINUTE
+
+private val logger = LoggerFactory.getLogger(ActivityHandler::class.java)
 
 class ActivityHandler: CrudHandler {
 
@@ -61,6 +64,7 @@ class ActivityHandler: CrudHandler {
             .toList()
 
         var rest: Rest? = results.firstOrNull()
+        logger.info("first (of latest) rest: ${gson.toJson(rest)}")
 
         if (results.count() == 2 && activity.isResting() == false) {
             // Swallow resting periods up inside active periods
@@ -71,8 +75,10 @@ class ActivityHandler: CrudHandler {
             if (results.first().resting == true &&
                 results.last().resting == false &&
                 results.last().endTime!! > boundary) {
+                logger.info("swallow rest: ${gson.toJson(rest)}")
                 restCollection.deleteOne(Rest::id eq results.first().id)
                 rest = results.last()
+                logger.info("latest rest is now: ${gson.toJson(rest)}")
             }
         }
 
@@ -82,11 +88,13 @@ class ActivityHandler: CrudHandler {
             calendar.time = activity.time
             calendar.add(MINUTE, 5)
             rest.endTime = calendar.time
+            logger.info("appended period to rest: ${gson.toJson(rest)}")
             restCollection.updateOne(Rest::id eq rest.id, rest)
         } else {
             if (rest != null) {
                 // If a previous rest/unrest period exists, then update its end time
                 rest.endTime = activity.time
+                logger.info("updated latest rest to now: ${gson.toJson(rest)}")
                 restCollection.updateOne(Rest::id eq rest.id, rest)
             }
             // Start a new period of rest/unrest
@@ -97,6 +105,8 @@ class ActivityHandler: CrudHandler {
             calendar.time = activity.time
             calendar.add(MINUTE, 5)
             rest.endTime = calendar.time
+
+            logger.info("inserted rest: ${gson.toJson(rest)}")
             restCollection.insertOne(rest)
         }
     }
@@ -110,6 +120,7 @@ class ActivityHandler: CrudHandler {
             activity.id = null
 
             updateRest(token.userId, activity)
+            logger.info("inserted activity: ${gson.toJson(activity)}")
 
             activityCollection.insertOne(activity)
         }
