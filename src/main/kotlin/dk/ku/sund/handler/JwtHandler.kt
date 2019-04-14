@@ -6,7 +6,7 @@ import io.javalin.Context
 import org.slf4j.LoggerFactory
 import java.util.*
 
-val logger = LoggerFactory.getLogger("MainKt")
+private val logger = LoggerFactory.getLogger("JwtHandlerKt")
 
 fun authorized(ctx: Context) {
     try {
