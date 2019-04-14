@@ -10,6 +10,7 @@ import io.javalin.apibuilder.CrudHandler
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.future.asCompletableFuture
+import kotlinx.coroutines.runBlocking
 import org.litote.kmongo.descending
 import org.litote.kmongo.eq
 import java.util.*
@@ -51,7 +52,7 @@ class ActivityHandler: CrudHandler {
         ctx.result(deferred.asCompletableFuture())
     }
 
-    suspend fun updateRest(userId: String, activity: Activity): Any = run {
+    suspend fun updateRest(userId: String, activity: Activity): Any = runBlocking {
         // Find the latest periods of rest/unrest for this user
         val results = restCollection
             .find(Rest::userId eq userId)
