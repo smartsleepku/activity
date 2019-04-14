@@ -1,4 +1,5 @@
 import dk.ku.sund.handler.ActivityHandler
+import dk.ku.sund.handler.AttendeeHandler
 import dk.ku.sund.handler.RestHandler
 import dk.ku.sund.handler.authorized
 import io.javalin.Javalin
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory
 fun main(args: Array<String>) {
     val logger = LoggerFactory.getLogger("MainKt")
     val restHandler = RestHandler()
+    val attendeeHandler = AttendeeHandler()
     val app = Javalin.create()
 
     app.requestLogger { ctx, timeMs -> logger.info("${ctx.method()} ${ctx.path()} took $timeMs ms") }
@@ -21,6 +23,7 @@ fun main(args: Array<String>) {
         }
         crud("/activity/:id", ActivityHandler())
         get("/rest", restHandler::getAll)
+        put("/attendee", attendeeHandler::update)
     }
 
     app.start(7000)
