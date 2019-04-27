@@ -1,7 +1,4 @@
-import dk.ku.sund.handler.ActivityHandler
-import dk.ku.sund.handler.AttendeeHandler
-import dk.ku.sund.handler.RestHandler
-import dk.ku.sund.handler.authorized
+import dk.ku.sund.handler.*
 import io.javalin.Javalin
 import io.javalin.apibuilder.ApiBuilder.*
 import org.slf4j.LoggerFactory
@@ -9,6 +6,7 @@ import org.slf4j.LoggerFactory
 fun main(args: Array<String>) {
     val logger = LoggerFactory.getLogger("MainKt")
     val restHandler = RestHandler()
+    val sleepHandler = SleepHandler()
     val attendeeHandler = AttendeeHandler()
     val app = Javalin.create()
 
@@ -23,6 +21,8 @@ fun main(args: Array<String>) {
         }
         crud("/activity/:id", ActivityHandler())
         get("/rest", restHandler::getAll)
+        get("/sleep", sleepHandler::getAll)
+        post("/sleep", sleepHandler::create)
         put("/attendee", attendeeHandler::update)
     }
 
