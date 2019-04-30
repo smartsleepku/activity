@@ -23,6 +23,7 @@ fun main(args: Array<String>) {
         get("/rest", restHandler::getAll)
         get("/sleep", sleepHandler::getAll)
         post("/sleep", sleepHandler::create)
+        post("/sleep/bulk", sleepHandler::createBulk)
         put("/attendee", attendeeHandler::update)
     }
 

@@ -13,8 +13,6 @@ import kotlinx.coroutines.runBlocking
 import org.litote.kmongo.*
 import org.slf4j.LoggerFactory
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.math.max
 
 private val logger = LoggerFactory.getLogger(SleepHandler::class.java)
 
@@ -36,11 +34,13 @@ class SleepHandler {
             .toList()
             .firstOrNull()
 
+        logger.debug("latest is currently: ${gson.toJson(latest)}")
+
         if (latest == null) {
             val rest = Rest(null, userId)
-            rest.userId = userId
             rest.resting = sleep.sleeping
             rest.startTime = sleep.time
+            logger.info("inserting new rest: ${gson.toJson(rest)}")
             restCollection.insertOne(rest)
             return@runBlocking
         }
@@ -49,13 +49,14 @@ class SleepHandler {
 
         if (latest.endTime == null) {
             latest.endTime = sleep.time
+            logger.info("updating rest to ${gson.toJson(latest)}")
             restCollection.updateOne(Rest::id eq latest.id, latest)
         }
         val rest = Rest(null, userId)
-        rest.userId = userId
         rest.startTime = sleep.time
         rest.resting = sleep.sleeping
         restCollection.insertOne(rest)
+        logger.info("inserting new rest, post update: ${gson.toJson(rest)}")
     }
 
     fun setDenied(context: Context) = context.status(403)
@@ -99,5 +100,25 @@ class SleepHandler {
             sleepCollection.insertOne(sleep)
         }
         ctx.result(deferred.asCompletableFuture())
+    }
+
+    fun createBulk(ctx: Context) {
+        val token = token(ctx) ?: return
+
+        val deferred = GlobalScope.async {
+            val sleeps = ctx.body<Array<Sleep>>()
+            sleeps.forEach { sleep ->
+                sleep.userId = token.userId
+                sleep.id = null
+
+                logger.info("inserted sleep: ${gson.toJson(sleep)}")
+
+                updateRest(token.userId, sleep)
+
+                sleepCollection.insertOne(sleep)
+            }
+        }
+        ctx.result(deferred.asCompletableFuture())
+
     }
 }
