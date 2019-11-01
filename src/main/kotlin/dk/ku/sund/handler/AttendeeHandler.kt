@@ -7,6 +7,7 @@ import com.mongodb.client.model.ReturnDocument
 import com.mongodb.client.model.UpdateOptions
 import dk.ku.sund.database.db
 import dk.ku.sund.model.Attendee
+import dk.ku.sund.model.AttendeeLog
 import dk.ku.sund.model.Token
 import io.javalin.Context
 import kotlinx.coroutines.GlobalScope
@@ -18,6 +19,7 @@ import java.util.*
 
 class AttendeeHandler {
     val collection = db.getCollection<Attendee>("attendees")
+    var collectionLog = db.getCollection<AttendeeLog>("attendeelogs")
 
     val gson = GsonBuilder()
         .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
@@ -35,8 +37,9 @@ class AttendeeHandler {
     fun update(ctx: Context) {
         val token = token(ctx) ?: return
         val attendee = ctx.body<Attendee>()
+        val attendeeLog = ctx.body<AttendeeLog>()
         attendee.userId = token.userId
-
+        attendeeLog.userId = token.userId
         val deferred = GlobalScope.async {
             attendee.id = collection.findOne(Attendee::userId eq token.userId)?.id
 
@@ -46,6 +49,20 @@ class AttendeeHandler {
 
             calendar.time = nextMorning(weekend, attendee)
             attendee.nextPush = nextPush(calendar)
+
+            var isChanged = true;
+            if (attendee.id != null) {
+              val curAttendee = collection.findOne(Attendee::userId eq token.userId)
+              if (curAttendee?.weekdayMorning == attendeeLog?.weekdayMorning &&
+                  curAttendee?.weekdayEvening == attendeeLog?.weekdayEvening &&
+                  curAttendee?.weekendMorning == attendeeLog?.weekendMorning &&
+                  curAttendee?.weekendEvening == attendeeLog?.weekendEvening)
+                  isChanged = false;
+            }
+            if (isChanged) {
+              attendeeLog.changedDatetime = Date()
+              collectionLog.insertOne(attendeeLog)
+            }
 
             if (attendee.id == null) {
                 collection.insertOne(attendee)

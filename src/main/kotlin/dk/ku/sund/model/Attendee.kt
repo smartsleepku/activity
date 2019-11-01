@@ -20,3 +20,15 @@ class Attendee(id: String?, userId: String?) {
     var devices = mutableListOf<Device>()
     var nextPush: Date? = null
 }
+
+class AttendeeLog(id: String?, userId: String?) {
+    @BsonId
+    var id: String? = id
+    var userId: String? = userId
+    var changedDatetime: Date? = null
+    var gmtOffset: Int? = null
+    var weekdayMorning: Date? = null
+    var weekdayEvening: Date? = null
+    var weekendMorning: Date? = null
+    var weekendEvening: Date? = null
+}
