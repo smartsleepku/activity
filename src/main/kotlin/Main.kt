@@ -7,6 +7,7 @@ fun main(args: Array<String>) {
     val logger = LoggerFactory.getLogger("MainKt")
     val restHandler = RestHandler()
     val sleepHandler = SleepHandler()
+    val heartbeatHandler = HeartbeatHandler()
     val attendeeHandler = AttendeeHandler()
     val app = Javalin.create()
 
@@ -22,8 +23,11 @@ fun main(args: Array<String>) {
         crud("/activity/:id", ActivityHandler())
         get("/rest", restHandler::getAll)
         get("/sleep", sleepHandler::getAll)
+        get("/heartbeat", heartbeatHandler::getAll)
         post("/sleep", sleepHandler::create)
         post("/sleep/bulk", sleepHandler::createBulk)
+        post("/heartbeat", heartbeatHandler::create)
+        post("/heartbeat/bulk", heartbeatHandler::createBulk)
         put("/attendee", attendeeHandler::update)
     }
 
