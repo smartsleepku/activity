@@ -37,9 +37,15 @@ class AttendeeHandler {
     fun update(ctx: Context) {
         val token = token(ctx) ?: return
         val attendee = ctx.body<Attendee>()
-        val attendeeLog = ctx.body<AttendeeLog>()
+        val attendeeLog = AttendeeLog(null, null)
         attendee.userId = token.userId
-        attendeeLog.userId = token.userId
+        attendeeLog.id = attendee.id
+        attendeeLog.userId = attendee.userId
+        attendeeLog.weekdayMorning = attendee.weekdayMorning
+        attendeeLog.weekdayEvening = attendee.weekdayEvening
+        attendeeLog.weekendMorning = attendee.weekendMorning
+        attendeeLog.weekendEvening = attendee.weekendEvening
+        attendeeLog.gmtOffset = attendee.gmtOffset
         val deferred = GlobalScope.async {
             attendee.id = collection.findOne(Attendee::userId eq token.userId)?.id
 
