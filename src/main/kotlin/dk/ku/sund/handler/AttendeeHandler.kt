@@ -59,10 +59,10 @@ class AttendeeHandler {
             var isChanged = true;
             if (attendee.id != null) {
               val curAttendee = collection.findOne(Attendee::userId eq token.userId)
-              if (curAttendee?.weekdayMorning == attendeeLog?.weekdayMorning &&
-                  curAttendee?.weekdayEvening == attendeeLog?.weekdayEvening &&
-                  curAttendee?.weekendMorning == attendeeLog?.weekendMorning &&
-                  curAttendee?.weekendEvening == attendeeLog?.weekendEvening)
+              if (curAttendee?.weekdayMorning == attendeeLog.weekdayMorning &&
+                  curAttendee?.weekdayEvening == attendeeLog.weekdayEvening &&
+                  curAttendee?.weekendMorning == attendeeLog.weekendMorning &&
+                  curAttendee?.weekendEvening == attendeeLog.weekendEvening)
                   isChanged = false;
             }
             if (isChanged) {
