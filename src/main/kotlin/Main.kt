@@ -9,6 +9,7 @@ fun main(args: Array<String>) {
     val sleepHandler = SleepHandler()
     val heartbeatHandler = HeartbeatHandler()
     val attendeeHandler = AttendeeHandler()
+    val debugHandler = DebugHandler()
     val app = Javalin.create()
 
     app.requestLogger { ctx, timeMs -> logger.info("${ctx.method()} ${ctx.path()} took $timeMs ms") }
@@ -29,6 +30,7 @@ fun main(args: Array<String>) {
         post("/heartbeat", heartbeatHandler::create)
         post("/heartbeat/bulk", heartbeatHandler::createBulk)
         put("/attendee", attendeeHandler::update)
+        post("/debug", debugHandler::create)
     }
 
     app.start(7000)
